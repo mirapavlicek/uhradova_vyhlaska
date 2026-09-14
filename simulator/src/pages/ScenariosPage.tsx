@@ -3,7 +3,7 @@ import { Callout, Card } from '../components/fields'
 import { PageHeader } from '../components/Summary'
 import { fmtCzk, fmtIndex, fmtMio, fmtPct, signed } from '../lib/format'
 import { useScenario } from '../state/ScenarioContext'
-import { computeAll } from '../model/all'
+import { computeAll, type AllResults } from '../model/all'
 
 export function ScenariosPage() {
   const { scenario, update, saved, saveAs, load, remove, exportJson, importJson, reset } = useScenario()
@@ -36,19 +36,44 @@ export function ScenariosPage() {
     }
   }
 
-  const rows: { label: string; a: number; b?: number; fmt: (v: number) => string; pctDiff?: boolean }[] = [
-    { label: 'Celkem', a: current.total, b: other?.total, fmt: fmtCzk, pctDiff: true },
-    { label: 'Paušální úhrada', a: current.pu.uhr, b: other?.pu.uhr, fmt: fmtCzk, pctDiff: true },
-    { label: '  IPU', a: current.pu.ipu, b: other?.pu.ipu, fmt: fmtCzk, pctDiff: true },
-    { label: '  r (změna produkce)', a: current.pu.ratio, b: other?.pu.ratio, fmt: fmtIndex },
-    { label: '  I_ZP', a: current.pu.izp, b: other?.pu.izp, fmt: fmtIndex },
-    { label: 'Vyčleněná úhrada', a: current.sep.uhr, b: other?.sep.uhr, fmt: fmtCzk, pctDiff: true },
-    { label: 'Případový paušál', a: current.pp.uhr, b: other?.pp.uhr, fmt: fmtCzk, pctDiff: true },
-    { label: '  K_DZ', a: current.pp.kdz, b: other?.pp.kdz, fmt: fmtIndex },
-    { label: 'Ambulantní složka', a: current.amb.total, b: other?.amb.total, fmt: fmtCzk, pctDiff: true },
-    { label: '  I_zp_amb', a: current.amb.radost.izpAmb, b: other?.amb.radost.izpAmb, fmt: fmtIndex },
-    { label: 'Centrové léky', a: current.cl.uhr, b: other?.cl.uhr, fmt: fmtCzk, pctDiff: true },
-    { label: '  IZP_CL', a: current.cl.izpCl, b: other?.cl.izpCl, fmt: fmtIndex },
+  type Row = { label: string; a: number; b?: number; fmt: (v: number) => string; pctDiff?: boolean; heading?: boolean }
+  const money = (label: string, pick: (r: AllResults) => number): Row => ({ label, a: pick(current), b: other ? pick(other) : undefined, fmt: fmtCzk, pctDiff: true })
+  const index = (label: string, pick: (r: AllResults) => number): Row => ({ label: `  ${label}`, a: pick(current), b: other ? pick(other) : undefined, fmt: fmtIndex })
+  const heading = (label: string, pick: (r: AllResults) => number): Row => ({ ...money(label, pick), heading: true })
+
+  const rows: Row[] = [
+    heading('Celkem', (r) => r.total),
+    heading('Nemocnice celkem', (r) => r.hospital),
+    money('Paušální úhrada', (r) => r.pu.uhr),
+    { ...money('IPU', (r) => r.pu.ipu), label: '  IPU' },
+    index('r (změna produkce)', (r) => r.pu.ratio),
+    index('I_ZP', (r) => r.pu.izp),
+    money('Vyčleněná úhrada', (r) => r.sep.uhr),
+    money('Případový paušál', (r) => r.pp.uhr),
+    index('K_DZ', (r) => r.pp.kdz),
+    money('Urgentní příjem, LPS, ERN a paušály', (r) => r.urgent.total),
+    money('Následná lůžková péče', (r) => r.aftercare.total),
+    index('BON_Geri', (r) => r.aftercare.bonGeri),
+    money('Jednodenní péče', (r) => r.oneDay.total),
+    money('Ambulantní složka', (r) => r.amb.total),
+    index('I_zp_amb', (r) => r.amb.radost.izpAmb),
+    money('Centrové léky', (r) => r.cl.uhr),
+    index('IZP_CL', (r) => r.cl.izpCl),
+    money('Regulace nemocnic (srážka)', (r) => -r.hospitalReg.total),
+    heading('Primární péče celkem', (r) => r.primary),
+    money('Praktičtí lékaři', (r) => r.gp.total),
+    { ...money('Kapitace', (r) => r.gp.capitation), label: '  Kapitace' },
+    money('Gynekologie', (r) => r.gyn.total),
+    heading('Ambulantní segmenty celkem', (r) => r.ambulatory),
+    money('Ambulantní specialisté', (r) => r.specialists.total),
+    index('HB specialisté', (r) => r.specialists.hb),
+    money('Fyzioterapie (902)', (r) => r.physio.total),
+    money('Domácí péče (925/916)', (r) => r.homecare.total),
+    money('Mobilní paliativní péče (926)', (r) => r.palliative.total),
+    money('Odbornost 913', (r) => r.odb913.total),
+    money('Laboratoře a radiodiagnostika', (r) => r.labs.total),
+    money('Dialýza', (r) => r.dialysis.total),
+    index('HB dialýza', (r) => r.dialysis.hb),
   ]
 
   return (
@@ -149,7 +174,7 @@ export function ScenariosPage() {
                 {rows.map((r) => {
                   const diff = r.b === undefined ? 0 : r.a - r.b
                   return (
-                    <tr key={r.label} className={r.label.startsWith('  ') ? 'row--sub' : undefined}>
+                    <tr key={r.label} className={r.label.startsWith('  ') ? 'row--sub' : r.heading ? 'row--heading' : undefined}>
                       <td>{r.label.trim()}</td>
                       <td className="num">{r.fmt(r.a)}</td>
                       <td className="num">{r.b === undefined ? '–' : r.fmt(r.b)}</td>

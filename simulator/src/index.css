@@ -338,6 +338,21 @@ nav {
   background: var(--surface-2);
 }
 
+.module-card--negative .module-card__value {
+  color: var(--warning);
+}
+
+.section-title {
+  font-size: 1.05rem;
+  font-weight: 650;
+  margin: 28px 0 12px;
+  color: var(--text);
+}
+
+.section-title:first-of-type {
+  margin-top: 8px;
+}
+
 .module-card__title {
   font-weight: 650;
 }
@@ -589,6 +604,11 @@ select:focus {
 .row--sub td:first-child {
   padding-left: 26px;
   color: var(--muted);
+}
+
+.row--heading td {
+  font-weight: 650;
+  background: var(--surface-2);
 }
 
 /* Steps ------------------------------------------------------------------ */

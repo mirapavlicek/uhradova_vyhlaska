@@ -1,16 +1,25 @@
 import { useMemo } from 'react'
 import { Card } from '../components/fields'
 import { PageHeader, Summary } from '../components/Summary'
-import { fmtCzk, fmtIndex, fmtMio, fmtPct } from '../lib/format'
+import { fmtCzk, fmtIndex, fmtMio, fmtNum, fmtPct } from '../lib/format'
 import { computeAll } from '../model/all'
 import { useScenario } from '../state/ScenarioContext'
 import type { PageId } from '../routes'
+
+interface ModuleCard {
+  id: PageId
+  title: string
+  value: number
+  detail: string
+  description: string
+  negative?: boolean
+}
 
 export function OverviewPage({ go }: { go: (p: PageId) => void }) {
   const { scenario } = useScenario()
   const all = useMemo(() => computeAll(scenario), [scenario])
 
-  const modules: { id: PageId; title: string; value: number; detail: string; description: string }[] = [
+  const acute: ModuleCard[] = [
     {
       id: 'pu',
       title: 'Paušální úhrada (A, D)',
@@ -32,6 +41,30 @@ export function OverviewPage({ go }: { go: (p: PageId) => void }) {
       detail: `K_DZ = ${fmtIndex(all.pp.kdz)}`,
       description: 'Výkonová úhrada CZ-DRG, psychiatrie s koeficientem duševního zdraví a redukcí za zkrácení LOS.',
     },
+  ]
+
+  const hospital: ModuleCard[] = [
+    {
+      id: 'urgent',
+      title: 'Urgentní příjem, LPS, ERN a paušály',
+      value: all.urgent.total,
+      detail: `urgent ${fmtMio(all.urgent.uhrUrgTotal)} · ERN ${fmtMio(all.urgent.ern)}${all.urgent.vykonyCapped ? ' · limit výkonů' : ''}`,
+      description: 'Paušál podle typu UP, limit výkonové úhrady, příjem od ZZS, LPS, ERN, paliativní týmy a další pevné úhrady.',
+    },
+    {
+      id: 'aftercare',
+      title: 'Následná lůžková péče',
+      value: all.aftercare.total,
+      detail: `paušál ${fmtMio(all.aftercare.lumpTotal)} · BON_Geri ${fmtIndex(all.aftercare.bonGeri)}`,
+      description: 'Paušální sazba za OD × ZKN × KN (personál, akreditace, děti, geriatrie), transformační plán, výkonová část.',
+    },
+    {
+      id: 'oneDay',
+      title: 'Jednodenní péče',
+      value: all.oneDay.total,
+      detail: `${scenario.oneDay.rows.length} položek`,
+      description: 'Úhrada za výkon jednodenní péče pevnou částkou podle přílohy; odečet vyžádané extramurální péče.',
+    },
     {
       id: 'amb',
       title: 'Ambulantní složka nemocnice',
@@ -46,7 +79,81 @@ export function OverviewPage({ go }: { go: (p: PageId) => void }) {
       detail: `r = ${fmtIndex(all.cl.ratio)}, IZP_CL = ${fmtIndex(all.cl.izpCl)}`,
       description: 'Referenční limit × INU × ICS vs. skutečnost × ICS, degresivní index se stropem 7,5 %.',
     },
+    {
+      id: 'hospitalReg',
+      title: 'Regulace nemocnic',
+      value: -all.hospitalReg.total,
+      negative: true,
+      detail: `revize ${fmtMio(all.hospitalReg.cmReductionCzk)} · ambulance ${fmtMio(all.hospitalReg.regulation.penalty)}`,
+      description: 'Snížení casemixu po revizi (jednotlivé případy, vzorek 20 %/80 %), regulace léčiv a vyžádané péče ambulancí.',
+    },
   ]
+
+  const primary: ModuleCard[] = [
+    {
+      id: 'gp',
+      title: 'Praktičtí lékaři',
+      value: all.gp.total,
+      detail: `kapitace ${fmtMio(all.gp.capitation)} · sazba ${fmtNum(all.gp.rate, 2)} Kč`,
+      description: 'Kapitace podle věkových indexů s bonifikacemi, výkony, epizody, POCUS, týmová praxe, sestra v ordinaci, regulace.',
+    },
+    {
+      id: 'gyn',
+      title: 'Gynekologie',
+      value: all.gyn.total,
+      detail: `měsíční sazba ${fmtNum(all.gyn.monthlyRate, 2)} Kč · těhotenství ${fmtMio(all.gyn.pregnancy)}`,
+      description: 'Agregovaná úhrada za registrované pojištěnky, trimestrální úhrady, léčba neplodnosti, epizody, regulace.',
+    },
+  ]
+
+  const ambulatory: ModuleCard[] = [
+    {
+      id: 'specialists',
+      title: 'Ambulantní specialisté',
+      value: all.specialists.total,
+      detail: `HB ${fmtNum(all.specialists.hb, 2)} · KN ${fmtIndex(all.specialists.kn)}${all.specialists.puro.capped ? ' · strop' : ''}`,
+      description: 'Výkonová úhrada s maximem (1,06 + KN)·POP·PURO_O a odstupňovanou regulací léčiv a vyžádané péče.',
+    },
+    {
+      id: 'physio',
+      title: 'Fyzioterapie (902)',
+      value: all.physio.total,
+      detail: `HB ${fmtNum(all.physio.hb, 2)} · včasné zahájení ${fmtMio(all.physio.earlyBonus)}`,
+      description: 'Maximum úhrady, péče vybraných diagnóz bez limitu, bonus za včasné zahájení po hospitalizaci.',
+    },
+    {
+      id: 'homecare',
+      title: 'Domácí a paliativní péče',
+      value: all.homecare.total + all.palliative.total + all.odb913.total,
+      detail: `925/916 ${fmtMio(all.homecare.total)} · 926 ${fmtMio(all.palliative.total)} · 913 ${fmtMio(all.odb913.total)}`,
+      description: 'Domácí péče s maximem, mobilní paliativní péče s limitem dnů, ošetřovatelská péče v pobytových službách.',
+    },
+    {
+      id: 'labs',
+      title: 'Laboratoře a radiodiagnostika',
+      value: all.labs.total,
+      detail: `RDG ${fmtMio(all.labs.rdgTotal)} · lab. HBred ${fmtNum(all.labs.lab.hbSkut, 2)}`,
+      description: 'Redukovaná hodnota bodu podle růstu bodů na pojištěnce, laboratoře a genetika s maximem PURO.',
+    },
+    {
+      id: 'dialysis',
+      title: 'Dialýza',
+      value: all.dialysis.total,
+      detail: `HB ${fmtNum(all.dialysis.hb, 4)} · K_TR ${fmtPct(all.dialysis.ktr)}`,
+      description: 'Kvalitativní bonifikace, domácí dialýza, transplantační bonifikace BON_TR a signální výkony čekací listiny.',
+    },
+  ]
+
+  const renderCards = (cards: ModuleCard[]) =>
+    cards.map((m) => (
+      <button key={m.id} type="button" className={`module-card ${m.negative ? 'module-card--negative' : ''}`} onClick={() => go(m.id)}>
+        <div className="module-card__title">{m.title}</div>
+        <div className="module-card__value">{fmtMio(m.value)}</div>
+        <div className="module-card__detail">{m.detail}</div>
+        <p className="module-card__desc">{m.description}</p>
+        <span className="module-card__cta">Otevřít modul →</span>
+      </button>
+    ))
 
   return (
     <>
@@ -54,8 +161,8 @@ export function OverviewPage({ go }: { go: (p: PageId) => void }) {
         title="Simulátor úhradové vyhlášky 2027"
         lead={
           <>
-            Interaktivní průchod výpočty návrhu vyhlášky o stanovení hodnot bodu a výše úhrad pro rok 2027. Zadejte referenční (2025) a hodnocené (2027) údaje
-            poskytovatele, sledujte každý krok výpočtu podle vzorců vyhlášky a modelujte dopady změn produkce i parametrů vyhlášky. Aktuální scénář:{' '}
+            Interaktivní průchod výpočty návrhu vyhlášky o stanovení hodnot bodu a výše úhrad pro rok 2027 ve všech segmentech. Zadejte referenční (2025) a hodnocené (2027)
+            údaje poskytovatele, sledujte každý krok výpočtu podle vzorců vyhlášky a modelujte dopady změn produkce i parametrů vyhlášky. Aktuální scénář:{' '}
             <strong>{scenario.name}</strong>.
           </>
         }
@@ -63,23 +170,39 @@ export function OverviewPage({ go }: { go: (p: PageId) => void }) {
       <Summary
         items={[
           { label: 'Celkem za modelované segmenty', value: fmtCzk(all.total), tone: 'result' },
+          { label: 'Nemocnice', value: fmtMio(all.hospital), hint: 'akutní + následná + ambulance + CL + paušály − regulace' },
           { label: 'Akutní lůžková péče', value: fmtMio(all.pu.uhr + all.sep.uhr + all.pp.uhr), hint: 'paušál + vyčleněná + případový paušál' },
-          { label: 'Ambulance', value: fmtMio(all.amb.total) },
-          { label: 'Centrové léky', value: fmtMio(all.cl.uhr) },
-          { label: 'CZS', value: fmtCzk(scenario.common.vaccinationMet ? scenario.params.czsVaccinated : scenario.params.czs), hint: scenario.common.vaccinationMet ? 'podmínka proočkovanosti splněna' : 'základní sazba' },
+          { label: 'Primární péče', value: fmtMio(all.primary), hint: 'praktici + gynekologie' },
+          { label: 'Ambulantní segmenty', value: fmtMio(all.ambulatory), hint: 'specialisté, 902, domácí péče, laboratoře, dialýza' },
+          {
+            label: 'CZS',
+            value: fmtCzk(scenario.common.vaccinationMet ? scenario.params.czsVaccinated : scenario.params.czs),
+            hint: scenario.common.vaccinationMet ? 'podmínka proočkovanosti splněna' : 'základní sazba',
+          },
         ]}
       />
 
+      <h2 className="section-title">Akutní lůžková péče (příloha č. 1, část A)</h2>
       <div className="module-grid">
-        {modules.map((m) => (
-          <button key={m.id} type="button" className="module-card" onClick={() => go(m.id)}>
-            <div className="module-card__title">{m.title}</div>
-            <div className="module-card__value">{fmtMio(m.value)}</div>
-            <div className="module-card__detail">{m.detail}</div>
-            <p className="module-card__desc">{m.description}</p>
-            <span className="module-card__cta">Otevřít modul →</span>
-          </button>
-        ))}
+        {renderCards(acute)}
+        <button type="button" className="module-card module-card--alt" onClick={() => go('under50')}>
+          <div className="module-card__title">Poskytovatelé pod 50 případů</div>
+          <div className="module-card__value">výkonově</div>
+          <div className="module-card__detail">CM × CZS × NM bez paušálu</div>
+          <p className="module-card__desc">Malí poskytovatelé a nově vzniklé subjekty hrazené případovým paušálem bez referenčního období.</p>
+          <span className="module-card__cta">Otevřít →</span>
+        </button>
+      </div>
+
+      <h2 className="section-title">Další úhrady nemocnic</h2>
+      <div className="module-grid">{renderCards(hospital)}</div>
+
+      <h2 className="section-title">Primární péče (přílohy č. 2 a 4)</h2>
+      <div className="module-grid">{renderCards(primary)}</div>
+
+      <h2 className="section-title">Ambulantní segmenty (přílohy č. 3, 5–8)</h2>
+      <div className="module-grid">
+        {renderCards(ambulatory)}
         <button type="button" className="module-card module-card--alt" onClick={() => go('indexes')}>
           <div className="module-card__title">Indexy ARCTG</div>
           <div className="module-card__value">3 křivky</div>
@@ -110,10 +233,28 @@ export function OverviewPage({ go }: { go: (p: PageId) => void }) {
         </ol>
       </Card>
 
+      <Card title="Společný mechanismus ambulantních segmentů (PURO)" subtitle="Ambulantní specialisté, fyzioterapie, domácí péče, laboratoře – příloha č. 3, 5, 6, 7.">
+        <ol className="flow">
+          <li>
+            <strong>PURO_O</strong> = UHR_ref / POP_ref – průměrná úhrada na unikátního pojištěnce v referenčním období, s minimální hodnotou bodu (např. 0,90 Kč u specialistů).
+          </li>
+          <li>
+            <strong>Maximum</strong> = (koef. růstu + KN) · POPzpoZ · PURO_O + max[(koef. růstu + KN) · PURO_O · POPzpoMh; UHRMh − UHRMr] + nově nasmlouvané výkony.
+          </li>
+          <li>
+            <strong>Výkonová úhrada</strong> = body × hodnota bodu (základ + bonifikace) + ZUM/ZULP; hradí se min(výkonová úhrada; maximum), maximum se neuplatní u malých poskytovatelů.
+          </li>
+          <li>
+            <strong>Regulace</strong>: překročení průměrných nákladů na pojištěnce (léčiva 115 %, vyžádaná péče 110 %) se sráží odstupňovaně po 2,5 % za každých 0,5 p. b., nejvýše 40 % překročení a 15 % úhrady.
+          </li>
+        </ol>
+      </Card>
+
       <Card title="Poznámky k modelu">
         <ul className="notes">
           <li>Výpočty vychází z návrhu vyhlášky a důvodové zprávy (viz analýza v repozitáři). Součty Σ_i Σ_j max(JPL; DRG·NM) jsou modelovány po skupinách zadaných uživatelem.</li>
           <li>Hodnota péče ambulancí se zadává jako body × hodnota bodu 2027 + korunové položky; bonifikace se zadávají jako součet koeficientů.</li>
+          <li>Segmenty jsou modelovány na úrovni jedné odbornosti/jednoho poskytovatele; vyhláška počítá regulace a maxima za každou odbornost a pojišťovnu zvlášť.</li>
           <li>Údaje jsou uloženy pouze v prohlížeči (localStorage). Scénáře lze exportovat a importovat jako JSON.</li>
           <li>Aplikace není oficiálním nástrojem Ministerstva zdravotnictví ani zdravotních pojišťoven; slouží k orientačním simulacím.</li>
         </ul>

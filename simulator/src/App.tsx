@@ -1,19 +1,30 @@
 import { useEffect, useState } from 'react'
+import { AftercarePage } from './pages/AftercarePage'
 import { AmbPage } from './pages/AmbPage'
 import { CasePaymentPage } from './pages/CasePaymentPage'
 import { CentreDrugsPage } from './pages/CentreDrugsPage'
+import { DialysisPage } from './pages/DialysisPage'
+import { GpPage } from './pages/GpPage'
+import { GynPage } from './pages/GynPage'
+import { HomecarePage } from './pages/HomecarePage'
+import { HospitalRegulationPage } from './pages/HospitalRegulationPage'
 import { IndexesPage } from './pages/IndexesPage'
+import { LabsPage } from './pages/LabsPage'
+import { OneDayPage } from './pages/OneDayPage'
 import { OverviewPage } from './pages/OverviewPage'
 import { ParamsPage } from './pages/ParamsPage'
+import { PhysioPage } from './pages/PhysioPage'
 import { PuPage } from './pages/PuPage'
 import { ScenariosPage } from './pages/ScenariosPage'
 import { SeparatedPage, Under50Page } from './pages/SeparatedPage'
-import { GROUP_LABELS, parseHash, ROUTES, type PageId } from './routes'
+import { SpecialistsPage } from './pages/SpecialistsPage'
+import { UrgentPage } from './pages/UrgentPage'
+import { GROUP_LABELS, GROUP_ORDER, parseHash, ROUTES, type PageId } from './routes'
 import { ScenarioProvider, useScenario } from './state/ScenarioContext'
 
 function Sidebar({ page, go }: { page: PageId; go: (p: PageId) => void }) {
   const { scenario } = useScenario()
-  const groups = ['start', 'acute', 'other', 'tools'] as const
+  const groups = GROUP_ORDER
   return (
     <aside className="sidebar">
       <div className="brand" onClick={() => go('overview')} role="button" tabIndex={0}>
@@ -55,10 +66,32 @@ function Router({ page, go }: { page: PageId; go: (p: PageId) => void }) {
       return <CasePaymentPage />
     case 'under50':
       return <Under50Page />
+    case 'urgent':
+      return <UrgentPage />
+    case 'aftercare':
+      return <AftercarePage />
+    case 'oneDay':
+      return <OneDayPage />
     case 'amb':
       return <AmbPage />
     case 'cl':
       return <CentreDrugsPage />
+    case 'hospitalReg':
+      return <HospitalRegulationPage />
+    case 'gp':
+      return <GpPage />
+    case 'gyn':
+      return <GynPage />
+    case 'specialists':
+      return <SpecialistsPage />
+    case 'physio':
+      return <PhysioPage />
+    case 'homecare':
+      return <HomecarePage />
+    case 'labs':
+      return <LabsPage />
+    case 'dialysis':
+      return <DialysisPage />
     case 'indexes':
       return <IndexesPage />
     case 'params':
