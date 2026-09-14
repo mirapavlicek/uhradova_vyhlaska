@@ -84,6 +84,106 @@ export interface DecreeParams {
   }
   /** skupiny centrových léků (příloha č. 15, bod 5) */
   clGroups: CentreDrugGroup[]
+  /** urgentní příjem, LPS a příjem od ZZS (příloha č. 1, bod 8) */
+  urgent: {
+    prijemZzs: number
+    lpsAdults: number
+    lpsChildren: number
+    pausal: { I: number; II: number; III: number }
+    limit: { I: number; II: number; III: number; IV: number }
+    ckpRoom: number
+    ckpWorkplace: number
+    vykonyShare: number
+    outageCut: number
+  }
+  /** ostatní paušály nemocnic (bod 9) */
+  other: {
+    ern: { perNetwork: number; perNetworkVariable: number; perUop: number }
+    palliativeTeamFull: number
+    palliativeTeamReduced: number
+    onco51887: number
+    centrumProvazeni: number
+    provazeniPerChild: number
+    vykon78890: number
+  }
+  /** následná lůžková péče (příloha č. 1, část B) */
+  aftercare: {
+    zknHigh: number
+    zknBase: number
+    criterion: number
+    transShare: number
+    accreditation: number
+    palliativeDoctor: number
+    geriatrician: number
+    children12: number
+    children6: number
+    geriCap: number
+    geriMultiplier: number
+    msShare: number
+    u572: number
+    u572PerDay: number
+    hb: { od00015: number; od00017: number; od00020: number; od00033: number; od00018: number }
+  }
+  /** regulace předepsaných léčiv a vyžádané péče – odstupňovaná srážka */
+  regulation: {
+    drugsThreshold: number
+    requestedThreshold: number
+    zulpThreshold: number
+    stepPct: number
+    ratePerStep: number
+    maxShare: number
+    capShare: number
+    gpThreshold: number
+    gpRequestedThreshold: number
+    gpRate: number
+  }
+  /** ambulantní specialisté (příloha č. 3) */
+  specialists: { hbBase: number; baseCoef: number; hbMin: number; exemptUp: number }
+  /** fyzioterapie 902 (příloha č. 7) */
+  physio: { hbBase: number; baseCoef: number; hbMin: number; exemptUp: number; earlyBase: number; earlyWindow: number; earlyMaxDays: number }
+  /** domácí péče 925/916, paliativní 926, odb. 913 (příloha č. 6) */
+  homecare: { hb925: number; hb916: number; baseCoef: number; exemptUp: number; hb926: number; days926Adult: number; days926Child: number; hb913: number; growth913: number; hbMin913: number }
+  /** praktičtí lékaři (příloha č. 2) */
+  gp: {
+    rate: { a: number; b: number; c001: number; c002: number }
+    bonusEducation: number
+    bonusPrevention: number
+    bonusAccreditation: number
+    hbPrevention001: number
+    hbPrevention002: number
+    hbSelected: number
+    hbOther: number
+    hbEducation: number
+    hbExtendedHours: number
+    episode: number
+    pocusBonus: number
+    pocusMin: number
+    teamPerTenth: number
+    nurseShort: number
+    nurseLong: number
+    nurseMonthly: number
+    nurseMin: number
+  }
+  /** gynekologie (příloha č. 4) */
+  gyn: {
+    monthly: number
+    bonusEducation: number
+    bonusHours: number
+    bonusAccreditation: number
+    bonusAccreditationActive: number
+    bonusIso: number
+    bonusPrevention: number
+    bonusTeam: number
+    bonusMidwife: number
+    noUltrasoundFactor: number
+    trimester: [number, number, number]
+    infertility: number
+    episode: number
+  }
+  /** dialýza (příloha č. 8) */
+  dialysis: { hb: number; hbLow: number; qualityL1: number; qualityL2: number; homeBonus: number; homeShare: number; nMin: number; nMax: number; lt: number; ht: number }
+  /** laboratoře a radiodiagnostika (příloha č. 5) */
+  labs: { kn809: number; knLabs: number; kn816: number; hbMinShare: number; hbMinShare816: number }
 }
 
 export const DEFAULT_CL_GROUPS: CentreDrugGroup[] = [
@@ -142,7 +242,118 @@ export const DEFAULT_PARAMS: DecreeParams = {
     transDenominator: 0.85,
   },
   clGroups: DEFAULT_CL_GROUPS,
+  urgent: {
+    prijemZzs: 1_000,
+    lpsAdults: 2_000_000,
+    lpsChildren: 2_000_000,
+    pausal: { I: 300_000_000, II: 65_000_000, III: 12_500_000 },
+    limit: { I: 165_000_000, II: 100_000_000, III: 60_000_000, IV: 10_000_000 },
+    ckpRoom: 1_000_000,
+    ckpWorkplace: 2_500_000,
+    vykonyShare: 0.6,
+    outageCut: 0.5,
+  },
+  other: {
+    ern: { perNetwork: 8_500_000, perNetworkVariable: 1_500_000, perUop: 126 },
+    palliativeTeamFull: 2_050_000,
+    palliativeTeamReduced: 1_025_000,
+    onco51887: 250,
+    centrumProvazeni: 1_600_000,
+    provazeniPerChild: 3_000,
+    vykon78890: 12_500,
+  },
+  aftercare: {
+    zknHigh: 1.035,
+    zknBase: 1.02,
+    criterion: 0.003,
+    transShare: 0.35,
+    accreditation: 0.015,
+    palliativeDoctor: 0.04,
+    geriatrician: 0.04,
+    children12: 0.25,
+    children6: 0.75,
+    geriCap: 0.1,
+    geriMultiplier: 10,
+    msShare: 0.15,
+    u572: 0.03,
+    u572PerDay: 20,
+    hb: { od00015: 1.63, od00017: 1.59, od00020: 1.57, od00033: 1.37, od00018: 1.0 },
+  },
+  regulation: {
+    drugsThreshold: 1.15,
+    requestedThreshold: 1.1,
+    zulpThreshold: 1.15,
+    stepPct: 0.005,
+    ratePerStep: 0.025,
+    maxShare: 0.4,
+    capShare: 0.15,
+    gpThreshold: 1.2,
+    gpRequestedThreshold: 1.15,
+    gpRate: 0.25,
+  },
+  specialists: { hbBase: 0.98, baseCoef: 1.06, hbMin: 0.9, exemptUp: 100 },
+  physio: { hbBase: 0.73, baseCoef: 1.02, hbMin: 0.6, exemptUp: 30, earlyBase: 400, earlyWindow: 7, earlyMaxDays: 14 },
+  homecare: { hb925: 1.0, hb916: 0.91, baseCoef: 1.06, exemptUp: 30, hb926: 1.23, days926Adult: 30, days926Child: 180, hb913: 1.23, growth913: 1.05, hbMin913: 1.03 },
+  gp: {
+    rate: { a: 78, b: 69, c001: 60, c002: 66 },
+    bonusEducation: 1,
+    bonusPrevention: 2,
+    bonusAccreditation: 1,
+    hbPrevention001: 1.44,
+    hbPrevention002: 1.31,
+    hbSelected: 1.3,
+    hbOther: 1.19,
+    hbEducation: 0.04,
+    hbExtendedHours: 0.06,
+    episode: 90,
+    pocusBonus: 5_000,
+    pocusMin: 250,
+    teamPerTenth: 10_800,
+    nurseShort: 151,
+    nurseLong: 303,
+    nurseMonthly: 25_000,
+    nurseMin: 200,
+  },
+  gyn: {
+    monthly: 122,
+    bonusEducation: 9,
+    bonusHours: 9,
+    bonusAccreditation: 3,
+    bonusAccreditationActive: 9,
+    bonusIso: 9,
+    bonusPrevention: 6,
+    bonusTeam: 6,
+    bonusMidwife: 5,
+    noUltrasoundFactor: 0.5,
+    trimester: [2_489, 3_801, 5_322],
+    infertility: 848,
+    episode: 90,
+  },
+  dialysis: { hb: 1.18, hbLow: 0.92, qualityL1: 0.05, qualityL2: 0.07, homeBonus: 0.02, homeShare: 0.06, nMin: 0.02, nMax: 0.04, lt: 0.1, ht: 0.18 },
+  labs: { kn809: 1, knLabs: 1.03, kn816: 1.0, hbMinShare: 0.91, hbMinShare816: 0.6 },
 }
+
+/** Věkové skupiny a indexy kapitace (příloha č. 2, bod 10). */
+export const GP_AGE_GROUPS: { id: string; label: string; index: number }[] = [
+  { id: 'a0', label: '0–4 roky', index: 4.57 },
+  { id: 'a5', label: '5–9 let', index: 2.11 },
+  { id: 'a10', label: '10–14 let', index: 1.62 },
+  { id: 'a15', label: '15–19 let', index: 1.06 },
+  { id: 'a20', label: '20–24 let', index: 0.9 },
+  { id: 'a25', label: '25–29 let', index: 0.95 },
+  { id: 'a30', label: '30–34 let', index: 1.0 },
+  { id: 'a35', label: '35–39 let', index: 1.05 },
+  { id: 'a40', label: '40–44 let', index: 1.05 },
+  { id: 'a45', label: '45–49 let', index: 1.1 },
+  { id: 'a50', label: '50–54 let', index: 1.43 },
+  { id: 'a55', label: '55–59 let', index: 1.54 },
+  { id: 'a60', label: '60–64 let', index: 1.59 },
+  { id: 'a65', label: '65–69 let', index: 1.8 },
+  { id: 'a70', label: '70–74 let', index: 2.12 },
+  { id: 'a75', label: '75–79 let', index: 2.67 },
+  { id: 'a80', label: '80–84 let', index: 3.22 },
+  { id: 'a85', label: '85 a více let', index: 4.41 },
+]
 
 export const PROVIDER_TYPE_LABELS: Record<ProviderType, string> = {
   refNetUrg: 'Referenční síť (§ 41a) + urgentní příjem',
