@@ -3,7 +3,6 @@ name: Deploy simulator to GitHub Pages
 on:
   push:
     branches: [main, 'cursor/analyza-vzorcu-uv-2027-f1c6']
-    paths: ['simulator/**', '.github/workflows/deploy-simulator.yml']
   workflow_dispatch:
 
 permissions:
