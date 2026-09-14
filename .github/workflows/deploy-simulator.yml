@@ -2,7 +2,7 @@ name: Deploy simulator to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'cursor/analyza-vzorcu-uv-2027-f1c6']
     paths: ['simulator/**', '.github/workflows/deploy-simulator.yml']
   workflow_dispatch:
 
@@ -23,6 +23,9 @@ jobs:
         working-directory: simulator
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
