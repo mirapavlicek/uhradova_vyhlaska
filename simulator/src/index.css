@@ -681,6 +681,10 @@ select:focus {
 
 .step__note {
   font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.step--warning .step__note {
   color: var(--warning);
 }
 
