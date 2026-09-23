@@ -1010,3 +1010,11 @@ select:focus {
     break-inside: avoid;
   }
 }
+
+.advances-table td:first-child {
+  min-width: 220px;
+}
+
+.advances-table td:nth-child(4) {
+  min-width: 240px;
+}

@@ -20,7 +20,7 @@ export function HomecarePage() {
   return (
     <>
       <PageHeader
-        title="Domácí, paliativní a zvláštní ambulantní péče (925/916, 926, 913)"
+        title="Domácí, paliativní a zvláštní ambulantní péče (914, 916, 921, 925, 926, 913)"
         lead="Příloha č. 6. Domácí péče: HB 1,00 (925) / 0,91 (916) + bonifikace, maximum (1,06 + KN)·[POPzpoZ·PURO_O + max(PURO_O·POPzpoMh; UHRMh − UHRMr)]. Mobilní paliativní péče 926: HB 1,23 Kč, dny péče omezené 30 dny na dospělého a 180 na dítě. Odbornost 913: HB 1,23 Kč, maximum max{PMUP_ref · pacient-měsíce · 1,05 · KN; PB · 1,03 + KP}."
       />
       <Summary
