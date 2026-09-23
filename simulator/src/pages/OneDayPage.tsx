@@ -1,4 +1,5 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import oneDayCatalog from '../data/oneDay.json'
 import { Callout, Card, FieldGrid, NumberField } from '../components/fields'
 import { StepsTable } from '../components/StepsTable'
 import { PageHeader, Summary } from '../components/Summary'
@@ -13,6 +14,12 @@ export function OneDayPage() {
   const set = (partial: Partial<typeof oneDay>) => patch('oneDay', partial)
   const rows = oneDay.rows
   const setRow = (i: number, partial: Partial<OneDayRow>) => set({ rows: rows.map((r, j) => (j === i ? { ...r, ...partial } : r)) })
+  const [query, setQuery] = useState('')
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (q.length < 2) return []
+    return oneDayCatalog.filter((c) => c.code.includes(q) || c.drg.toLowerCase().includes(q) || c.name.toLowerCase().includes(q)).slice(0, 12)
+  }, [query])
 
   return (
     <>
@@ -29,13 +36,37 @@ export function OneDayPage() {
       />
       <Card
         title="Výkony jednodenní péče"
-        subtitle="Ceny podle přílohy č. 13, bod 5 (výchozí řádky: ICD 10818 a 10455)."
+        subtitle={`Ceník ${oneDayCatalog.length} výkonů převzatý z přílohy č. 13, bod 5 – vyhledejte a přidejte výkon.`}
         actions={
           <button type="button" className="btn btn--secondary" onClick={() => set({ rows: [...rows, { id: `j${Date.now()}`, code: '', name: '', price: 0, count: 0 }] })}>
             Přidat výkon
           </button>
         }
       >
+        <div className="toolbar">
+          <label className="field field--inline">
+            <span className="field__label">Hledat v příloze č. 13</span>
+            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="kód výkonu, CZ-DRG nebo název" />
+          </label>
+        </div>
+        {matches.length > 0 && (
+          <ul className="picker">
+            {matches.map((c) => (
+              <li key={c.code + c.drg}>
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  onClick={() => {
+                    set({ rows: [...rows, { id: `j${Date.now()}`, code: c.code, name: c.name, price: c.price, count: 0 }] })
+                    setQuery('')
+                  }}
+                >
+                  <strong>{c.code}</strong> {c.name} <span className="muted">({c.drg})</span> – {fmtCzk(c.price)}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         <div className="table-wrap">
           <table className="table table--editable">
             <thead>

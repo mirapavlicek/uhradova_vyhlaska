@@ -314,6 +314,82 @@ export function ParamsPage() {
         </FieldGrid>
       </Card>
 
+      <Card title="Následná péče – pevné sazby, ostatní úhrady nemocnic">
+        <FieldGrid columns={4}>
+          <NumberField label="Růst sazeb OD 00031/32/98/99" value={p.aftercare.contractGrowth} onChange={(v) => setNested('aftercare', { contractGrowth: v })} step={0.005} />
+          {(['v09535', 'v09536', 'v09537'] as const).map((k) => (
+            <NumberField key={k} label={`Výkon ${k.slice(1)}`} value={p.aftercare.fees[k]} onChange={(v) => setDeep('aftercare', 'fees', { [k]: v })} unit="Kč" />
+          ))}
+          {(['od00090', 'od00091'] as const).flatMap((od) =>
+            p.aftercare.od9091[od].map((v, i) => (
+              <NumberField
+                key={od + i}
+                label={`OD ${od.slice(2)} – kategorie ${i + 3}`}
+                value={v}
+                onChange={(nv) => setDeep('aftercare', 'od9091', { [od]: p.aftercare.od9091[od].map((x, j) => (j === i ? nv : x)) as [number, number, number] })}
+                unit="Kč"
+              />
+            )),
+          )}
+          {section('other', [
+            { key: 'od3132Rate', label: 'OD 00031/00032 u akutní péče', unit: 'Kč' },
+            { key: 'hb005', label: 'HB odbornosti 005', step: 0.01, unit: 'Kč' },
+          ])}
+          {section('homecare', [
+            { key: 'hb914', label: 'HB odbornosti 914', step: 0.01, unit: 'Kč' },
+            { key: 'hb921', label: 'HB odbornosti 921', step: 0.01, unit: 'Kč' },
+            { key: 'transportHb', label: 'HB přepravy v návštěvní službě', step: 0.01, unit: 'Kč' },
+          ])}
+        </FieldGrid>
+      </Card>
+
+      <Card title="Zubní lékařství (příloha č. 11) a § 14–19">
+        <FieldGrid columns={4}>
+          {section('dental', [
+            { key: 'capEducated', label: 'Agregovaná úhrada s dokladem vzdělávání', unit: 'Kč' },
+            { key: 'capOther', label: 'Agregovaná úhrada ostatní', unit: 'Kč' },
+            { key: 'addUnder6', label: 'Příplatek do 6 let', unit: 'Kč' },
+            { key: 'add6to12', label: 'Příplatek 6–12 let', unit: 'Kč' },
+            { key: 'add12to18', label: 'Příplatek 12–18 let', unit: 'Kč' },
+          ])}
+          {section('misc', [
+            { key: 'zzsHb', label: 'ZZS/PPNP – HB', step: 0.01, unit: 'Kč' },
+            { key: 'zzsTransportHb', label: 'ZZS – HB přepravy', step: 0.01, unit: 'Kč' },
+            { key: 'zzs06714Hb', label: 'ZZS – HB výkonu 06714', step: 0.01, unit: 'Kč' },
+            { key: 'zzsEpisode', label: 'ZZS – úhrada za epizodu', unit: 'Kč', step: 50 },
+            { key: 'zdsNonstopHb', label: 'ZDS nonstop – HB', step: 0.01, unit: 'Kč' },
+            { key: 'zdsNonstop40Hb', label: 'ZDS nonstop – HB výkonu 40', step: 0.01, unit: 'Kč' },
+            { key: 'zdsHb', label: 'ZDS – HB', step: 0.01, unit: 'Kč' },
+            { key: 'zds40Hb', label: 'ZDS – HB výkonu 40', step: 0.01, unit: 'Kč' },
+            { key: 'zds69Hb', label: 'ZDS – HB výkonu 69', step: 0.01, unit: 'Kč' },
+            { key: 'dentalEmergencyDay', label: 'Zubní pohotovost za den', unit: 'Kč', step: 100 },
+            { key: 'pharmacyEmergencyDay', label: 'Lékárenská pohotovost za den', unit: 'Kč', step: 100 },
+            { key: 'spaGrowth', label: 'Lázně – růst sazby 2026', step: 0.01 },
+            { key: 'spa09543Hb', label: 'Lázně – HB výkonu 09543', step: 0.01, unit: 'Kč' },
+            { key: 'ozdravovnaDay', label: 'Ozdravovna za den', unit: 'Kč', step: 10 },
+            { key: 'hb09543', label: 'HB výkonu 09543', step: 0.01, unit: 'Kč' },
+            { key: 'hb09555', label: 'HB výkonů 09555–09557', step: 0.01, unit: 'Kč' },
+            { key: 'hb09580', label: 'HB výkonů 09580–09581', step: 0.01, unit: 'Kč' },
+            { key: 'fee09990', label: 'Výkon 09990', unit: 'Kč' },
+            { key: 'fee09552', label: 'Výkon 09552', unit: 'Kč' },
+            { key: 'eRecipe', label: 'Převod receptu', unit: 'Kč' },
+            { key: 'lateCoef', label: 'Koeficient pozdního vykázání (§ 2 odst. 4)', step: 0.01 },
+          ])}
+        </FieldGrid>
+      </Card>
+
+      <Card title="Měsíční předběžné úhrady – násobek úhrady referenčního období">
+        <FieldGrid columns={4}>
+          {section('advances', [
+            { key: 'specialists', label: 'Ambulantní specialisté (příl. 3)', step: 0.01 },
+            { key: 'rdg', label: 'Radiodiagnostika (příl. 5 bod 3)', step: 0.01 },
+            { key: 'labs', label: 'Laboratoře (příl. 5 bod 1–2)', step: 0.01 },
+            { key: 'odb913', label: 'Odbornost 913 (příl. 6 C)', step: 0.01 },
+            { key: 'physio', label: 'Fyzioterapie (příl. 7)', step: 0.01 },
+          ])}
+        </FieldGrid>
+      </Card>
+
       <Card title="Dialýza, laboratoře a radiodiagnostika (přílohy č. 5 a 8)">
         <FieldGrid columns={4}>
           {section('dialysis', [

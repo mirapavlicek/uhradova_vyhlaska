@@ -137,11 +137,56 @@ export function AftercarePage() {
           <NumberField label="Body OD 00017 – NIP (1,59 Kč)" value={aftercare.pointsOd00017} onChange={(v) => set({ pointsOd00017: v })} step={10_000} />
           <NumberField label="Body OD 00020 – DIOP (1,57 Kč)" value={aftercare.pointsOd00020} onChange={(v) => set({ pointsOd00020: v })} step={10_000} />
           <NumberField label="Body OD 00033/00035 (1,37 Kč)" value={aftercare.pointsOd00033} onChange={(v) => set({ pointsOd00033: v })} step={10_000} />
+          <NumberField label="Body OD 00018/00019/00038 (1,00 Kč)" value={aftercare.pointsOd00018} onChange={(v) => set({ pointsOd00018: v })} step={10_000} />
           <NumberField label="Vyžádaná extramurální péče" value={aftercare.em} onChange={(v) => set({ em: v })} unit="Kč" step={100_000} />
         </FieldGrid>
-        <Callout kind="info">
-          OD 00031, 00032, 00098 a 00099 se hradí sazbou 2026 navýšenou o 2 %; OD 00090/00091 mají pevné sazby podle kategorie pacienta (4 819–5 349 Kč). Limity: 90 OD 00017 na pojištěnce nad 18 let, 190 OD 00020.
-        </Callout>
+        <Callout kind="info">Limity: 90 OD 00017 na pojištěnce nad 18 let, 190 OD 00020.</Callout>
+      </Card>
+
+      <Card title="Pevné sazby a výkony (část B, body 1.3–1.5)">
+        <FieldGrid columns={4}>
+          <NumberField label="Dny OD 00031/00032/00098/00099" value={aftercare.contractDays} onChange={(v) => set({ contractDays: v })} />
+          <NumberField label="Jejich průměrná sazba 2026" value={aftercare.contractRate2026} onChange={(v) => set({ contractRate2026: v })} unit="Kč" help="Hradí se sazbou 2026 navýšenou o 2 %." />
+          <NumberField label="Výkony 09535 (150 Kč)" value={aftercare.fees.v09535} onChange={(v) => set({ fees: { ...aftercare.fees, v09535: v } })} />
+          <NumberField label="Výkony 09536 (50 Kč)" value={aftercare.fees.v09536} onChange={(v) => set({ fees: { ...aftercare.fees, v09536: v } })} />
+          <NumberField label="Výkony 09537 (200 Kč)" value={aftercare.fees.v09537} onChange={(v) => set({ fees: { ...aftercare.fees, v09537: v } })} />
+        </FieldGrid>
+        <div className="table-wrap">
+          <table className="table table--editable">
+            <thead>
+              <tr>
+                <th>Dny podle kategorie pacienta</th>
+                <th>Kategorie 3</th>
+                <th>Kategorie 4</th>
+                <th>Kategorie 5</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(['od00090', 'od00091'] as const).map((od) => (
+                <tr key={od}>
+                  <td>
+                    OD {od.slice(2)} ({params.aftercare.od9091[od].map((v) => fmtCzk(v)).join(' / ')})
+                  </td>
+                  {aftercare.od9091Days[od].map((v, i) => (
+                    <td key={i}>
+                      <input
+                        type="number"
+                        min={0}
+                        value={v}
+                        aria-label={`OD ${od.slice(2)} kategorie ${i + 3}`}
+                        onChange={(e) => {
+                          const days = [...aftercare.od9091Days[od]] as [number, number, number]
+                          days[i] = parseFloat(e.target.value) || 0
+                          set({ od9091Days: { ...aftercare.od9091Days, [od]: days } })
+                        }}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Card>
 
       <Card title="Citlivost: BON_Geri podle úvazků geriatrů" subtitle={`min{0,1; 10 · úvazky / ${aftercare.bedsOd24} lůžek}`}>

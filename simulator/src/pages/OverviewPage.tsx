@@ -3,11 +3,13 @@ import { Card } from '../components/fields'
 import { PageHeader, Summary } from '../components/Summary'
 import { fmtCzk, fmtIndex, fmtMio, fmtNum, fmtPct } from '../lib/format'
 import { computeAll } from '../model/all'
+import type { SegmentId } from '../model/segments'
 import { useScenario } from '../state/ScenarioContext'
 import type { PageId } from '../routes'
 
 interface ModuleCard {
   id: PageId
+  segment?: SegmentId
   title: string
   value: number
   detail: string
@@ -104,6 +106,23 @@ export function OverviewPage({ go }: { go: (p: PageId) => void }) {
       detail: `měsíční sazba ${fmtNum(all.gyn.monthlyRate, 2)} Kč · těhotenství ${fmtMio(all.gyn.pregnancy)}`,
       description: 'Agregovaná úhrada za registrované pojištěnky, trimestrální úhrady, léčba neplodnosti, epizody, regulace.',
     },
+    {
+      id: 'dental',
+      title: 'Zubní lékařství',
+      value: all.dental.total,
+      detail: `agregovaná ${fmtMio(all.dental.capitation)} · výkony ${fmtMio(all.dental.services)}`,
+      description: 'Agregovaná úhrada 24 / 22 Kč za registrovaného pojištěnce, ceník výkonů a výrobků přílohy č. 11.',
+    },
+  ]
+
+  const misc: ModuleCard[] = [
+    {
+      id: 'other',
+      title: 'ZZS, doprava, pohotovosti, lázně, lékárny',
+      value: all.other.total,
+      detail: `ZZS ${fmtMio(all.other.zzs)} · ZDS ${fmtMio(all.other.zds)} · lázně ${fmtMio(all.other.spa)}`,
+      description: 'Pevné hodnoty bodu a paušály § 14–19, pohotovosti násobené K z přílohy č. 9, výkony 09543–09990.',
+    },
   ]
 
   const ambulatory: ModuleCard[] = [
@@ -144,9 +163,20 @@ export function OverviewPage({ go }: { go: (p: PageId) => void }) {
     },
   ]
 
+  const SEG: Partial<Record<PageId, SegmentId>> = { pu: 'acute', separated: 'acute', casePayment: 'acute', homecare: 'homecare' }
+  const inScope = (m: ModuleCard) => {
+    const seg = m.segment ?? SEG[m.id] ?? (m.id as SegmentId)
+    return m.id === 'homecare' ? scenario.scope.homecare || scenario.scope.palliative || scenario.scope.odb913 : scenario.scope[seg] !== false
+  }
   const renderCards = (cards: ModuleCard[]) =>
     cards.map((m) => (
-      <button key={m.id} type="button" className={`module-card ${m.negative ? 'module-card--negative' : ''}`} onClick={() => go(m.id)}>
+      <button
+        key={m.id}
+        type="button"
+        className={`module-card ${m.negative ? 'module-card--negative' : ''} ${inScope(m) ? '' : 'module-card--off'}`}
+        onClick={() => go(m.id)}
+        title={inScope(m) ? undefined : 'Segment není v rozsahu poskytovatele – nezapočítává se do součtu.'}
+      >
         <div className="module-card__title">{m.title}</div>
         <div className="module-card__value">{fmtMio(m.value)}</div>
         <div className="module-card__detail">{m.detail}</div>
@@ -172,8 +202,9 @@ export function OverviewPage({ go }: { go: (p: PageId) => void }) {
           { label: 'Celkem za modelované segmenty', value: fmtCzk(all.total), tone: 'result' },
           { label: 'Nemocnice', value: fmtMio(all.hospital), hint: 'akutní + následná + ambulance + CL + paušály − regulace' },
           { label: 'Akutní lůžková péče', value: fmtMio(all.pu.uhr + all.sep.uhr + all.pp.uhr), hint: 'paušál + vyčleněná + případový paušál' },
-          { label: 'Primární péče', value: fmtMio(all.primary), hint: 'praktici + gynekologie' },
+          { label: 'Primární péče', value: fmtMio(all.primary), hint: 'praktici, gynekologie, zubní' },
           { label: 'Ambulantní segmenty', value: fmtMio(all.ambulatory), hint: 'specialisté, 902, domácí péče, laboratoře, dialýza' },
+          { label: 'Ostatní § 14–19', value: fmtMio(all.otherGroup), hint: 'ZZS, doprava, pohotovosti, lázně' },
           {
             label: 'CZS',
             value: fmtCzk(scenario.common.vaccinationMet ? scenario.params.czsVaccinated : scenario.params.czs),
@@ -181,6 +212,14 @@ export function OverviewPage({ go }: { go: (p: PageId) => void }) {
           },
         ]}
       />
+
+      <button type="button" className="cta-banner" onClick={() => go('modeling')}>
+        <span>
+          <strong>Modelace předběžné úhrady</strong>
+          <span className="muted"> – nahrajte data poskytovatele (XLSX/CSV, případy CZ-DRG) a získejte předpokládanou úhradu 2027, měsíční předběžnou úhradu a vyúčtování.</span>
+        </span>
+        <span className="module-card__cta">Otevřít →</span>
+      </button>
 
       <h2 className="section-title">Akutní lůžková péče (příloha č. 1, část A)</h2>
       <div className="module-grid">
@@ -197,7 +236,7 @@ export function OverviewPage({ go }: { go: (p: PageId) => void }) {
       <h2 className="section-title">Další úhrady nemocnic</h2>
       <div className="module-grid">{renderCards(hospital)}</div>
 
-      <h2 className="section-title">Primární péče (přílohy č. 2 a 4)</h2>
+      <h2 className="section-title">Primární péče (přílohy č. 2, 4 a 11)</h2>
       <div className="module-grid">{renderCards(primary)}</div>
 
       <h2 className="section-title">Ambulantní segmenty (přílohy č. 3, 5–8)</h2>
@@ -211,6 +250,9 @@ export function OverviewPage({ go }: { go: (p: PageId) => void }) {
           <span className="module-card__cta">Otevřít →</span>
         </button>
       </div>
+
+      <h2 className="section-title">Ostatní segmenty (§ 14–19)</h2>
+      <div className="module-grid">{renderCards(misc)}</div>
 
       <Card title="Jak vyhláška počítá paušální úhradu" subtitle="Zjednodušený tok výpočtu pro skupiny A a D; každý krok najdete v modulu Paušální úhrada.">
         <ol className="flow">

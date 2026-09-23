@@ -64,6 +64,7 @@ export function ScenariosPage() {
     money('Praktičtí lékaři', (r) => r.gp.total),
     { ...money('Kapitace', (r) => r.gp.capitation), label: '  Kapitace' },
     money('Gynekologie', (r) => r.gyn.total),
+    money('Zubní lékařství', (r) => r.dental.total),
     heading('Ambulantní segmenty celkem', (r) => r.ambulatory),
     money('Ambulantní specialisté', (r) => r.specialists.total),
     index('HB specialisté', (r) => r.specialists.hb),
@@ -74,6 +75,11 @@ export function ScenariosPage() {
     money('Laboratoře a radiodiagnostika', (r) => r.labs.total),
     money('Dialýza', (r) => r.dialysis.total),
     index('HB dialýza', (r) => r.dialysis.hb),
+    heading('Ostatní § 14–19 celkem', (r) => r.otherGroup),
+    money('ZZS a PPNP', (r) => r.other.zzs),
+    money('Zdravotnická dopravní služba', (r) => r.other.zds),
+    money('Lázně a ozdravovny', (r) => r.other.spa),
+    money('Pohotovosti a výkony § 18–19', (r) => r.other.dentalEmergency + r.other.pharmacy + r.other.flat),
   ]
 
   return (

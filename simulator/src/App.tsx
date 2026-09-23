@@ -3,6 +3,8 @@ import { AftercarePage } from './pages/AftercarePage'
 import { AmbPage } from './pages/AmbPage'
 import { CasePaymentPage } from './pages/CasePaymentPage'
 import { CentreDrugsPage } from './pages/CentreDrugsPage'
+import { CoveragePage } from './pages/CoveragePage'
+import { DentalPage } from './pages/DentalPage'
 import { DialysisPage } from './pages/DialysisPage'
 import { GpPage } from './pages/GpPage'
 import { GynPage } from './pages/GynPage'
@@ -10,7 +12,9 @@ import { HomecarePage } from './pages/HomecarePage'
 import { HospitalRegulationPage } from './pages/HospitalRegulationPage'
 import { IndexesPage } from './pages/IndexesPage'
 import { LabsPage } from './pages/LabsPage'
+import { ModelingPage } from './pages/ModelingPage'
 import { OneDayPage } from './pages/OneDayPage'
+import { OtherPage } from './pages/OtherPage'
 import { OverviewPage } from './pages/OverviewPage'
 import { ParamsPage } from './pages/ParamsPage'
 import { PhysioPage } from './pages/PhysioPage'
@@ -92,6 +96,14 @@ function Router({ page, go }: { page: PageId; go: (p: PageId) => void }) {
       return <LabsPage />
     case 'dialysis':
       return <DialysisPage />
+    case 'dental':
+      return <DentalPage />
+    case 'other':
+      return <OtherPage />
+    case 'modeling':
+      return <ModelingPage go={go} />
+    case 'coverage':
+      return <CoveragePage go={go} />
     case 'indexes':
       return <IndexesPage />
     case 'params':

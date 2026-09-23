@@ -58,6 +58,10 @@ export interface UrgentInputs {
   provazeniChildren: number
   ernMember: boolean
   ern: ErnNetwork[]
+  /** dny OD 00031 a 00032 (582 Kč za den, bod 1.3) */
+  od3132Days: number
+  /** body odbornosti 005 (HB 1,04, bod 9.2) */
+  points005: number
 }
 
 export interface UrgentResult {
@@ -178,6 +182,17 @@ export function computeUrgent(inp: UrgentInputs, p: DecreeParams): UrgentResult 
       unit: 'czk',
     })
     otherTotal += provazeni
+  }
+
+  const od3132 = inp.od3132Days * o.od3132Rate
+  if (od3132) {
+    rec.add({ symbol: 'OD 00031 / 00032', label: 'Paušální sazba 582 Kč za ošetřovací den (mimo paušál a případový paušál)', substitution: `${inp.od3132Days} · ${o.od3132Rate}`, value: od3132, unit: 'czk' })
+    otherTotal += od3132
+  }
+  const odb005 = inp.points005 * o.hb005
+  if (odb005) {
+    rec.add({ symbol: 'Odbornost 005', label: 'Body × 1,04 Kč', substitution: `${inp.points005} · ${o.hb005}`, value: odb005, unit: 'czk' })
+    otherTotal += odb005
   }
 
   let ern = 0

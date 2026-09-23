@@ -12,7 +12,7 @@ import { DEFAULT_PARAMS } from './params'
 import { earlyStartBonus, computePhysio } from './physio'
 import { computePuro } from './puro'
 import { computeRegulation, regulationItem } from './regulation'
-import { defaultScenario, normalizeScenario } from './scenario'
+import { defaultScenario, normalizeScenario, SCENARIO_VERSION } from './scenario'
 import { computeSpecialists } from './specialists'
 import { computeUrgent } from './urgent'
 
@@ -232,7 +232,7 @@ describe('Scénář', () => {
   it('normalizace doplní nové moduly do starého scénáře (verze 1)', () => {
     const old = { version: 1, name: 'Starý', pu: { cm2025A: 1 } }
     const s = normalizeScenario(old)
-    expect(s.version).toBe(2)
+    expect(s.version).toBe(SCENARIO_VERSION)
     expect(s.name).toBe('Starý')
     expect(s.pu.cm2025A).toBe(1)
     expect(s.pu.cm2025D).toBe(base.pu.cm2025D)
@@ -242,7 +242,7 @@ describe('Scénář', () => {
   it('computeAll vrací konečné součty za všechny moduly', () => {
     const all = computeAll(base)
     expect(Number.isFinite(all.total)).toBe(true)
-    expect(all.total).toBeCloseTo(all.hospital + all.primary + all.ambulatory, 6)
+    expect(all.total).toBeCloseTo(all.hospital + all.primary + all.ambulatory + all.otherGroup, 6)
     expect(all.hospital).toBeGreaterThan(1_000_000_000)
   })
 })

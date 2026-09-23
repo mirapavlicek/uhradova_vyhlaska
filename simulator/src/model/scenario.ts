@@ -2,6 +2,7 @@ import type { AcuteCommon, CasePaymentInputs, PuInputs, SeparatedInputs, Under50
 import type { AftercareInputs } from './aftercare'
 import type { AmbInputs } from './ambulance'
 import type { CentreDrugInputs } from './centreDrugs'
+import type { DentalInputs } from './dental'
 import type { DialysisInputs } from './dialysis'
 import type { GpInputs } from './gp'
 import type { GynInputs } from './gyn'
@@ -10,12 +11,38 @@ import type { HospitalRegulationInputs } from './hospitalRegulation'
 import { DEFAULT_RDG_GROUPS, type LabsInputs } from './labs'
 import { DEFAULT_ONE_DAY_ROWS, type OneDayInputs } from './oneDay'
 import { DEFAULT_CL_GROUPS, DEFAULT_PARAMS, GP_AGE_GROUPS, type DecreeParams } from './params'
+import type { OtherInputs } from './other'
 import type { PhysioInputs } from './physio'
 import type { PuroInputs } from './puro'
+import { SEGMENT_IDS, scopeOf, type Scope, type SegmentId } from './segments'
 import type { SpecialistsInputs } from './specialists'
 import type { UrgentInputs } from './urgent'
 
-export const SCENARIO_VERSION = 2
+export const SCENARIO_VERSION = 3
+
+export interface ProviderInfo {
+  name: string
+  ico: string
+  /** zkratka zdravotní pojišťovny podle přílohy č. 9 */
+  insurer: string
+  district: string
+  region: string
+  /** statusy center vysoce specializované péče (příl. 10) – určují koeficient centralizace KC */
+  centres: string[]
+  /** podíl úhrady za služby vykázané po 31. 3. 2028 (§ 2 odst. 4 – koeficient 0,95) */
+  lateShare: number
+}
+
+export interface AdvanceInputs {
+  /** úhrada za referenční období 2025 po segmentech (0 = odvodit ze vstupů segmentu) */
+  refUhr: Record<SegmentId, number>
+  /** změny v rozsahu a struktuře služeb zahrnuté do předběžné úhrady (Kč za rok) */
+  adjust: Record<SegmentId, number>
+  /** úhrada radiodiagnostiky (příl. 5 bod 3) za referenční období */
+  refRdg: number
+}
+
+const zeroBySegment = () => Object.fromEntries(SEGMENT_IDS.map((id) => [id, 0])) as Record<SegmentId, number>
 
 export interface Scenario {
   version: number
@@ -41,6 +68,11 @@ export interface Scenario {
   odb913: Odb913Inputs
   labs: LabsInputs
   dialysis: DialysisInputs
+  dental: DentalInputs
+  other: OtherInputs
+  provider: ProviderInfo
+  scope: Scope
+  advances: AdvanceInputs
 }
 
 function puro(partial: Partial<PuroInputs> = {}): PuroInputs {
@@ -167,6 +199,8 @@ export function defaultScenario(): Scenario {
       provazeniChildren: 0,
       ernMember: false,
       ern: [{ id: 'ern1', name: 'ERN 1', uop: 40 }],
+      od3132Days: 400,
+      points005: 0,
     },
     aftercare: {
       rows: [
@@ -190,6 +224,11 @@ export function defaultScenario(): Scenario {
       pointsOd00017: 3_000_000,
       pointsOd00020: 0,
       pointsOd00033: 0,
+      pointsOd00018: 0,
+      contractDays: 0,
+      contractRate2026: 0,
+      od9091Days: { od00090: [0, 0, 0], od00091: [0, 0, 0] },
+      fees: { v09535: 1_200, v09536: 800, v09537: 300 },
       em: 1_500_000,
     },
     hospitalReg: {
@@ -299,6 +338,7 @@ export function defaultScenario(): Scenario {
       exemptPoints: 400_000,
       exemptKp: 0,
       puro: puro({ uhrRef: 3_600_000, popRef: 420, pbRef: 3_500_000, kpRef: 50_000, popZ: 430, popMh: 6, uhrMh: 300_000, uhrMr: 280_000, pbHo: 3_900_000, kpHo: 55_000 }),
+      other: { points914: 0, points921: 0, kp: 0, transportPoints: 150_000 },
     },
     palliative: {
       psychologist: true,
@@ -368,6 +408,28 @@ export function defaultScenario(): Scenario {
         requested: { avgRef: 8_000, avgHo: 8_200 },
       },
     },
+    dental: {
+      educated: true,
+      registered: { under6: 120, from6to12: 180, from12to18: 160, adults: 1_540 },
+      months: 12,
+      rows: [
+        { id: 'z1', code: '00900', count: 150, priceOverride: 0 },
+        { id: 'z2', code: '00901', count: 1_700, priceOverride: 0 },
+        { id: 'z3', code: '00908', count: 900, priceOverride: 0 },
+        { id: 'z4', code: '00940', count: 400, priceOverride: 0 },
+      ],
+    },
+    other: {
+      zzs: { points: 0, pointsTransport: 0, points06714: 0, episodes: 0 },
+      zds: { nonstop: true, points: 0, points40: 0, points69: 0 },
+      dentalEmergency: { days: 0, k: 0.55 },
+      spa: { complexDays: 0, complexRate2026: 0, contribDays: 0, contribRate2026: 0, points09543Spa: 0, ozdravovnaDays: 0 },
+      flat: { points09543: 20_000, points09555: 0, points09580: 0, count09990: 0, count09552: 0, eRecipes: 0 },
+      pharmacyEmergency: { days: 0, k: 0.55 },
+    },
+    provider: { name: 'Modelová nemocnice', ico: '', insurer: 'VZP', district: '', region: '', centres: [], lateShare: 0 },
+    scope: scopeOf(SEGMENT_IDS.filter((id) => id !== 'under50')),
+    advances: { refUhr: zeroBySegment(), adjust: zeroBySegment(), refRdg: 0 },
   }
 }
 
