@@ -72,6 +72,8 @@ export function UrgentPage() {
           <NumberField label="Počet výkonů 51887" value={urgent.count51887} onChange={(v) => set({ count51887: v })} />
           <ToggleField label="Centrum provázení (2,0 úv. ZS pracovníka)" checked={urgent.centrumProvazeni} onChange={(v) => set({ centrumProvazeni: v })} />
           <NumberField label="Ukončená provázení dětí < 19 let" value={urgent.provazeniChildren} onChange={(v) => set({ provazeniChildren: v })} help="+3 000 Kč za každé." />
+          <NumberField label="Dny OD 00031 a 00032" value={urgent.od3132Days} onChange={(v) => set({ od3132Days: v })} help="582 Kč za ošetřovací den, mimo paušál (bod 1.3)." />
+          <NumberField label="Body odbornosti 005" value={urgent.points005} onChange={(v) => set({ points005: v })} step={10_000} help="Hodnota bodu 1,04 Kč (bod 9.2)." />
         </FieldGrid>
       </Card>
 

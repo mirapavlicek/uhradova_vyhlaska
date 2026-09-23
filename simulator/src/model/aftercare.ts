@@ -81,6 +81,15 @@ export interface AftercareInputs {
   pointsOd00017: number
   pointsOd00020: number
   pointsOd00033: number
+  /** OD 00018, 00019 a 00038 */
+  pointsOd00018: number
+  /** OD 00031, 00032, 00098, 00099 – dny a průměrná sazba sjednaná na rok 2026 */
+  contractDays: number
+  contractRate2026: number
+  /** dny OD 00090 a 00091 podle kategorie pacienta 3, 4, 5 */
+  od9091Days: { od00090: [number, number, number]; od00091: [number, number, number] }
+  /** počty výkonů 09535, 09536, 09537 */
+  fees: { v09535: number; v09536: number; v09537: number }
   em: number
 }
 
@@ -98,6 +107,7 @@ export interface AftercareResult {
   rows: AftercareRowResult[]
   bonGeri: number
   lumpTotal: number
+  lumpOther: number
   u572Extra: number
   performanceTotal: number
   total: number
@@ -167,27 +177,67 @@ export function computeAftercare(inp: AftercareInputs, p: DecreeParams): Afterca
     rec.add({ symbol: 'Příplatek U57.2', label: '20 Kč za den OD 00024/00037 s doplňkovým kódem U57.2', substitution: `${inp.u572Days} · ${a.u572PerDay}`, value: u572Extra, unit: 'czk' })
   }
 
+  const contract = inp.contractDays * inp.contractRate2026 * a.contractGrowth
+  if (contract) {
+    rec.add({
+      symbol: 'OD 00031/00032/00098/00099',
+      label: 'Sazba sjednaná na rok 2026 navýšená o 2 %',
+      substitution: `${inp.contractDays} · ${inp.contractRate2026} · ${a.contractGrowth}`,
+      value: contract,
+      unit: 'czk',
+    })
+  }
+  const [c3, c4, c5] = inp.od9091Days.od00090
+  const [d3, d4, d5] = inp.od9091Days.od00091
+  const [r3, r4, r5] = a.od9091.od00090
+  const [s3, s4, s5] = a.od9091.od00091
+  const od9091 = c3 * r3 + c4 * r4 + c5 * r5 + d3 * s3 + d4 * s4 + d5 * s5
+  if (od9091) {
+    rec.add({
+      symbol: 'OD 00090 / 00091',
+      label: 'Pevná sazba za den podle kategorie pacienta 3 / 4 / 5',
+      substitution: `${c3}·${r3} + ${c4}·${r4} + ${c5}·${r5} + ${d3}·${s3} + ${d4}·${s4} + ${d5}·${s5}`,
+      value: od9091,
+      unit: 'czk',
+    })
+  }
+  const fees = inp.fees.v09535 * a.fees.v09535 + inp.fees.v09536 * a.fees.v09536 + inp.fees.v09537 * a.fees.v09537
+  if (fees) {
+    rec.add({
+      symbol: 'Výkony 09535–09537',
+      label: '150 / 50 / 200 Kč, vykázané s OD 00005, 00024, 00030 nebo 00037',
+      substitution: `${inp.fees.v09535} · ${a.fees.v09535} + ${inp.fees.v09536} · ${a.fees.v09536} + ${inp.fees.v09537} · ${a.fees.v09537}`,
+      value: fees,
+      unit: 'czk',
+    })
+  }
+
   const perf =
-    inp.pointsOd00015 * a.hb.od00015 + inp.pointsOd00017 * a.hb.od00017 + inp.pointsOd00020 * a.hb.od00020 + inp.pointsOd00033 * a.hb.od00033
+    inp.pointsOd00015 * a.hb.od00015 +
+    inp.pointsOd00017 * a.hb.od00017 +
+    inp.pointsOd00020 * a.hb.od00020 +
+    inp.pointsOd00033 * a.hb.od00033 +
+    inp.pointsOd00018 * a.hb.od00018
   if (perf) {
     rec.add({
-      symbol: 'NIP / DIOP / OD 00033',
-      label: 'Výkonově hrazené OD (hodnoty bodu 1,63 / 1,59 / 1,57 / 1,37 Kč)',
-      substitution: `${inp.pointsOd00015} · ${a.hb.od00015} + ${inp.pointsOd00017} · ${a.hb.od00017} + ${inp.pointsOd00020} · ${a.hb.od00020} + ${inp.pointsOd00033} · ${a.hb.od00033}`,
+      symbol: 'NIP / DIOP / OD 00033 / OD 00018',
+      label: 'Výkonově hrazené OD (hodnoty bodu 1,63 / 1,59 / 1,57 / 1,37 / 1,00 Kč)',
+      substitution: `${inp.pointsOd00015} · ${a.hb.od00015} + ${inp.pointsOd00017} · ${a.hb.od00017} + ${inp.pointsOd00020} · ${a.hb.od00020} + ${inp.pointsOd00033} · ${a.hb.od00033} + ${inp.pointsOd00018} · ${a.hb.od00018}`,
       value: perf,
       unit: 'czk',
     })
   }
 
-  const total = lumpTotal + u572Extra + perf - inp.em
+  const lumpOther = contract + od9091 + fees
+  const total = lumpTotal + lumpOther + u572Extra + perf - inp.em
   rec.add({
     symbol: 'Úhrada následné péče',
-    label: 'Σ paušálních sazeb + příplatky + výkonové OD − extramurální péče',
-    substitution: `${lumpTotal.toFixed(0)} + ${u572Extra} + ${perf.toFixed(0)} − ${inp.em}`,
+    label: 'Σ paušálních sazeb + pevné sazby a výkony + příplatky + výkonové OD − extramurální péče',
+    substitution: `${lumpTotal.toFixed(0)} + ${lumpOther.toFixed(0)} + ${u572Extra} + ${perf.toFixed(0)} − ${inp.em}`,
     value: total,
     unit: 'czk',
     emphasis: 'result',
   })
 
-  return { steps: rec.steps, rows, bonGeri: bonGeriRounded, lumpTotal, u572Extra, performanceTotal: perf, total }
+  return { steps: rec.steps, rows, bonGeri: bonGeriRounded, lumpTotal, lumpOther, u572Extra, performanceTotal: perf, total }
 }

@@ -21,6 +21,8 @@ export interface HomecareInputs {
   exemptPoints: number
   exemptKp: number
   puro: PuroInputs
+  /** odbornosti 914 a 921 (bez maxima úhrady) a výkony přepravy v návštěvní službě */
+  other: { points914: number; points921: number; kp: number; transportPoints: number }
 }
 
 export interface HomecareResult {
@@ -29,6 +31,7 @@ export interface HomecareResult {
   kn: number
   puro: PuroResult
   exemptUhr: number
+  otherUhr: number
   total: number
 }
 
@@ -69,9 +72,27 @@ export function computeHomecare(inp: HomecareInputs, p: DecreeParams): HomecareR
   if (exemptUhr) {
     rec.add({ symbol: 'Péče mimo maximum', label: 'Pojištěnci s výkonem 06349 / 06360 – výkonově', substitution: `${inp.exemptPoints} · ${hb.toFixed(2)} + ${inp.exemptKp}`, value: exemptUhr, unit: 'czk' })
   }
-  const total = puro.uhr + exemptUhr
-  rec.add({ symbol: `Úhrada ${inp.odb} celkem`, label: 'Limitovaná úhrada + péče mimo maximum', substitution: `${puro.uhr.toFixed(0)} + ${exemptUhr.toFixed(0)}`, value: total, unit: 'czk', emphasis: 'result' })
-  return { steps: rec.steps, hb, kn, puro, exemptUhr, total }
+  const o = inp.other
+  const otherUhr = o.points914 * c.hb914 + o.points921 * c.hb921 + o.kp + o.transportPoints * c.transportHb
+  if (otherUhr) {
+    rec.add({
+      symbol: '914 / 921 / přeprava',
+      label: 'Odbornosti 914 a 921 s HB 0,99 bez maxima + ZUM/ZULP + přeprava v návštěvní službě s HB 1,32',
+      substitution: `${o.points914} · ${c.hb914} + ${o.points921} · ${c.hb921} + ${o.kp} + ${o.transportPoints} · ${c.transportHb}`,
+      value: otherUhr,
+      unit: 'czk',
+    })
+  }
+  const total = puro.uhr + exemptUhr + otherUhr
+  rec.add({
+    symbol: `Úhrada ${inp.odb} celkem`,
+    label: 'Limitovaná úhrada + péče mimo maximum + 914/921',
+    substitution: `${puro.uhr.toFixed(0)} + ${exemptUhr.toFixed(0)} + ${otherUhr.toFixed(0)}`,
+    value: total,
+    unit: 'czk',
+    emphasis: 'result',
+  })
+  return { steps: rec.steps, hb, kn, puro, exemptUhr, otherUhr, total }
 }
 
 // ---------------------------------------------------------------- 926

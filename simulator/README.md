@@ -2,6 +2,27 @@
 
 Webová aplikace pro simulativní průchod výpočty návrhu vyhlášky o stanovení hodnot bodu, výše úhrad hrazených služeb a regulačních omezení pro rok 2027. Bez backendu – vše se počítá v prohlížeči, data zůstávají v `localStorage`.
 
+Živá verze: https://mirapavlicek.github.io/uhradova_vyhlaska/
+
+## Modelace předběžné úhrady
+
+Stránka **Modelace předběžné úhrady** je nástroj pro konkrétního poskytovatele:
+
+1. **Poskytovatel a rozsah** – název, pojišťovna, okres a region (koeficienty K z přílohy č. 9 se doplní automaticky), typ poskytovatele (předvolba segmentů), statusy center vysoce specializované péče (KC z přílohy č. 10), podíl služeb vykázaných po 31. 3. 2028 (§ 2 odst. 4, koeficient 0,95).
+2. **Data** – šablona XLSX/CSV předvyplněná aktuálními hodnotami jen pro segmenty v rozsahu (list *Vstupy* klíč–popis–hodnota, tabulkové listy, list *Případy CZ-DRG*). Vyplněný soubor (XLSX, XLS, ODS, CSV) se nahraje zpět; před použitím se zobrazí kontrola (počet hodnot, chybné a neznámé položky, souhrn casemixu po částech A–I).
+   Případy CZ-DRG (`drg; rok; pripady; preklady; cm_jpl; urgentni`) se ocení relativními vahami přílohy č. 10 a rozdělí do paušálu (A, D), vyčleněné úhrady (C, E), případového paušálu (B, F, G), psychiatrie (H) a individuální smlouvy (I).
+3. **Předběžná úhrada 2027** – po segmentech: úhrada 2025, předpokládaná úhrada 2027, pravidlo měsíční předběžné úhrady podle přílohy, měsíční částka, očekávané vyúčtování (doplatek/přeplatek) a lhůta. Export do XLSX (souhrn, průchod výpočtem, vstupy) a tisk.
+
+| Segment | Pravidlo měsíční předběžné úhrady |
+|---|---|
+| Nemocnice (příl. 1 A) | 1/12 předpokládané úhrady za hodnocené období (vyúčtování do 180 dnů) |
+| Ambulantní specialisté (příl. 3) | 1/12 ze 106 % úhrady referenčního období |
+| Laboratoře / RDG (příl. 5) | 1/12 ze 103 % / 104 % úhrady referenčního období |
+| Domácí péče, 926 (příl. 6 A, B) | hodnota vykázaných služeb za měsíc (maximum při vyúčtování) |
+| Odbornost 913 (příl. 6 C) | 1/12 ze 105 % úhrady referenčního období |
+| Fyzioterapie (příl. 7) | 1/12 ze 107 % úhrady referenčního období |
+| Praktici, gynekologie, zubní, dialýza, JP, § 14–19 | vyhláška pravidlo neuvádí – model použije hodnotu vykázaných služeb (označeno *) |
+
 ## Co umí
 
 ### Akutní lůžková péče (příloha č. 1, část A)
@@ -18,7 +39,7 @@ Webová aplikace pro simulativní průchod výpočty návrhu vyhlášky o stanov
 | Modul | Vyhláška | Obsah |
 |---|---|---|
 | Urgentní příjem, LPS, ERN a paušály | body 8–9 | paušál UP I.–III. typu, limit výkonové úhrady UP, krácení při výpadku provozu, příjem od ZZS (09564), LPS, CKP, ERN (za síť + za pojištěnce), paliativní týmy, centrum provázení, výkony 51887 / 78890 |
-| Následná lůžková péče | část B | paušální sazba za OD × ZKN × KN (personální kritérium, akreditace, paliativní lékař, geriatr, děti), BON_Geri, transformační plán, mimořádně nákladní pojištěnci, U572, výkonová část podle OD |
+| Následná lůžková péče | část B | paušální sazba za OD × ZKN × KN (personální kritérium, akreditace, paliativní lékař, geriatr, děti), BON_Geri, transformační plán, mimořádně nákladní pojištěnci, U572, výkonová část podle OD, OD 00031/32/98/99 (sazba 2026 + 2 %), OD 00090/00091, výkony 09535–09537 |
 | Jednodenní péče | část C | Σ pevných úhrad za výkon − extramurální péče |
 | Ambulantní složka nemocnic | body 7.15–7.20 | Úhr_amb_ref (narovnání), KN, I_zp_amb, IZ_GAUP, strop hodnotou péče |
 | Centrové léky | příl. 15 | 17 skupin s INU/ICS, min{ref·INU·ICS; skut.·ICS}·IZP_CL |
@@ -29,6 +50,7 @@ Webová aplikace pro simulativní průchod výpočty návrhu vyhlášky o stanov
 | Modul | Vyhláška | Obsah |
 |---|---|---|
 | Praktičtí lékaři (001, 002) | příl. 2 | kapitace podle věkových indexů a rozsahu hodin, bonifikace (vzdělávání, prevence, akreditace), HB výkonů, epizody péče, POCUS, týmová praxe, sestra v ordinaci / terénní sestra, regulace 120 % / 115 % |
+| Zubní lékařství (014, 015) | příl. 11 | agregovaná úhrada 24 / 22 Kč + věkové příplatky, ceník 196 výkonů a výrobků převzatý z návrhu |
 | Gynekologie (603, 604) | příl. 4 | měsíční agregovaná sazba s bonifikacemi, trimestrální úhrady těhotenství (koef. UZ / genetika), léčba neplodnosti, epizody péče, neregistrované pojištěnky, regulace |
 
 ### Ambulantní segmenty
@@ -37,8 +59,9 @@ Webová aplikace pro simulativní průchod výpočty návrhu vyhlášky o stanov
 |---|---|---|
 | Ambulantní specialisté | příl. 3 | HB 0,98 + bonifikace, KN, maximum (1,06 + KN)·POP·PURO_O + max[…], min. HB 0,90, výjimka do 100 UP (n/30), regulace ZULP / léčiva / vyžádaná péče |
 | Fyzioterapie (902) | příl. 7 | HB 0,73 + bonifikace, maximum PURO s min. HB 0,60, péče vybraných diagnóz mimo limit, bonus za včasné zahájení 400–800 Kč |
-| Domácí a paliativní péče | příl. 6 | 925/916 s maximem PURO, 926 s limitem dnů (30 / 180) a HB 1,23, odbornost 913 s růstem PMUP 5 % |
+| Domácí a paliativní péče | příl. 6 | 925/916 s maximem PURO, 926 s limitem dnů (30 / 180) a HB 1,23, odbornost 913 s růstem PMUP 5 %, odbornosti 914 a 921 bez maxima, přeprava v návštěvní službě |
 | Laboratoře a radiodiagnostika | příl. 5 | HBred = FS + (HB − FS)·min{1; KN·(PB_ref/UOP_ref)/(PB_ho/UOP_ho)} po skupinách RDG, laboratoře a genetika (816) s maximem PURO |
+| ZZS, doprava, pohotovosti, lázně, lékárny | § 14–19 | HB ZZS/PPNP/ZDS, 1 550 Kč za epizodu, zubní a lékárenská pohotovost × K, lázně 102 % sazby 2026, ozdravovny, výkony 09543–09990, e-recepty |
 | Dialýza | příl. 8 | HB 1,18 (18530/18550 0,92), kvalitativní bonifikace, domácí dialýza ≥ 6 %, BON_TR = N_min + S·(N_max − N_min), signální výkony čekací listiny, regulace |
 
 ### Nástroje
@@ -49,6 +72,7 @@ Webová aplikace pro simulativní průchod výpočty návrhu vyhlášky o stanov
 | Indexy ARCTG | průběh I_ZP, I_zp_amb, IZP_CL; body odlepení, sklon, stropy; modelace konstant |
 | Parametry vyhlášky | všechny číselné konstanty editovatelné (CZS, růsty, tolerance, NM, X, KN, K_DZ, INU/ICS, paušály UP, ERN, následná péče, regulace, PURO segmenty, kapitace, gynekologie, dialýza, laboratoře) |
 | Scénáře a porovnání | uložení, načtení, export/import JSON, porovnání dvou scénářů po všech segmentech |
+| Pokrytí vyhlášky | přehled ustanovení: modelováno / zjednodušeno / mimo výpočet |
 
 Každý modul zobrazuje **krokový průchod výpočtem**: symbol proměnné podle vyhlášky, obecný vzorec, dosazení konkrétních hodnot a výsledek; kroky, kde se uplatnilo krácení nebo strop, jsou zvýrazněny. Grafy citlivosti ukazují závislost úhrady na změně produkce (resp. LOS, růstu unikátních pojištěnců, K_TR, dnů do zahájení péče).
 
@@ -84,9 +108,17 @@ src/model/       výpočetní jádro bez závislosti na UI
   homecare.ts    domácí péče 925/916, mobilní paliativní péče 926, odbornost 913
   labs.ts        laboratoře, genetika a radiodiagnostika
   dialysis.ts    dialyzační péče
+  other.ts       § 14–19 (ZZS, ZDS, pohotovosti, lázně, výkony s pevnou úhradou)
+  dental.ts      zubní lékařství (příloha č. 11)
+  segments.ts    seznam segmentů, rozsah poskytovatele, předvolby
+  advances.ts    měsíční předběžné úhrady a vyúčtování
+  casemix.ts     casemix z případů CZ-DRG (příloha č. 10)
+  kpp.ts         koeficienty poměru počtu pojištěnců (příloha č. 9)
   all.ts         přepočet všech modulů pro přehled a porovnání scénářů
   scenario.ts    typ scénáře, výchozí modelová data, normalizace při importu
   model.test.ts, segments.test.ts  testy (spojitost indexů, koridor, redukce, stropy, regulace, PURO…)
+src/data/        číselníky vygenerované z návrhu (tools/extract_data.py): KPP, CZ-DRG, centra, zubní ceník, jednodenní péče
+src/lib/io.ts    šablona XLSX/CSV, import a export výsledků (SheetJS)
 src/pages/       stránky modulů
 src/components/  formulářové prvky, krokový průchod, grafy (recharts)
 src/state/       kontext scénáře + localStorage

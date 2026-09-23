@@ -105,6 +105,10 @@ export interface DecreeParams {
     centrumProvazeni: number
     provazeniPerChild: number
     vykon78890: number
+    /** OD 00031 a 00032 u poskytovatelů akutní péče (bod 1.3) */
+    od3132Rate: number
+    /** odbornost 005 (bod 9.2) */
+    hb005: number
   }
   /** následná lůžková péče (příloha č. 1, část B) */
   aftercare: {
@@ -123,6 +127,12 @@ export interface DecreeParams {
     u572: number
     u572PerDay: number
     hb: { od00015: number; od00017: number; od00020: number; od00033: number; od00018: number }
+    /** OD 00031, 00032, 00098, 00099: sazba 2026 × růst */
+    contractGrowth: number
+    /** OD 00090 a 00091 podle kategorie pacienta 3, 4, 5 */
+    od9091: { od00090: [number, number, number]; od00091: [number, number, number] }
+    /** výkony 09535, 09536, 09537 vykázané s OD 00005/00024/00030/00037 */
+    fees: { v09535: number; v09536: number; v09537: number }
   }
   /** regulace předepsaných léčiv a vyžádané péče – odstupňovaná srážka */
   regulation: {
@@ -142,7 +152,52 @@ export interface DecreeParams {
   /** fyzioterapie 902 (příloha č. 7) */
   physio: { hbBase: number; baseCoef: number; hbMin: number; exemptUp: number; earlyBase: number; earlyWindow: number; earlyMaxDays: number }
   /** domácí péče 925/916, paliativní 926, odb. 913 (příloha č. 6) */
-  homecare: { hb925: number; hb916: number; baseCoef: number; exemptUp: number; hb926: number; days926Adult: number; days926Child: number; hb913: number; growth913: number; hbMin913: number }
+  homecare: {
+    hb925: number
+    hb916: number
+    baseCoef: number
+    exemptUp: number
+    hb926: number
+    days926Adult: number
+    days926Child: number
+    hb913: number
+    growth913: number
+    hbMin913: number
+    /** odbornosti 914 a 921 – bez maxima úhrady */
+    hb914: number
+    hb921: number
+    /** výkony přepravy v návštěvní službě (příl. 6 bod 1, příl. 7 bod 1) */
+    transportHb: number
+  }
+  /** zubní lékařství – agregovaná úhrada (příloha č. 11, bod 1 a 2) */
+  dental: { capEducated: number; capOther: number; addUnder6: number; add6to12: number; add12to18: number }
+  /** § 14–19 a § 2 odst. 4 */
+  misc: {
+    zzsHb: number
+    zzsTransportHb: number
+    zzs06714Hb: number
+    zzsEpisode: number
+    zdsNonstopHb: number
+    zdsNonstop40Hb: number
+    zdsHb: number
+    zds40Hb: number
+    zds69Hb: number
+    dentalEmergencyDay: number
+    pharmacyEmergencyDay: number
+    spaGrowth: number
+    spa09543Hb: number
+    ozdravovnaDay: number
+    hb09543: number
+    hb09555: number
+    hb09580: number
+    fee09990: number
+    fee09552: number
+    eRecipe: number
+    /** úhrada za služby vykázané po 31. 3. 2028 se násobí koeficientem */
+    lateCoef: number
+  }
+  /** měsíční předběžné úhrady – násobitel úhrady referenčního období */
+  advances: { specialists: number; rdg: number; labs: number; odb913: number; physio: number }
   /** praktičtí lékaři (příloha č. 2) */
   gp: {
     rate: { a: number; b: number; c001: number; c002: number }
@@ -261,6 +316,8 @@ export const DEFAULT_PARAMS: DecreeParams = {
     centrumProvazeni: 1_600_000,
     provazeniPerChild: 3_000,
     vykon78890: 12_500,
+    od3132Rate: 582,
+    hb005: 1.04,
   },
   aftercare: {
     zknHigh: 1.035,
@@ -278,6 +335,9 @@ export const DEFAULT_PARAMS: DecreeParams = {
     u572: 0.03,
     u572PerDay: 20,
     hb: { od00015: 1.63, od00017: 1.59, od00020: 1.57, od00033: 1.37, od00018: 1.0 },
+    contractGrowth: 1.02,
+    od9091: { od00090: [4_819, 5_069, 5_249], od00091: [4_919, 5_169, 5_349] },
+    fees: { v09535: 150, v09536: 50, v09537: 200 },
   },
   regulation: {
     drugsThreshold: 1.15,
@@ -293,7 +353,46 @@ export const DEFAULT_PARAMS: DecreeParams = {
   },
   specialists: { hbBase: 0.98, baseCoef: 1.06, hbMin: 0.9, exemptUp: 100 },
   physio: { hbBase: 0.73, baseCoef: 1.02, hbMin: 0.6, exemptUp: 30, earlyBase: 400, earlyWindow: 7, earlyMaxDays: 14 },
-  homecare: { hb925: 1.0, hb916: 0.91, baseCoef: 1.06, exemptUp: 30, hb926: 1.23, days926Adult: 30, days926Child: 180, hb913: 1.23, growth913: 1.05, hbMin913: 1.03 },
+  homecare: {
+    hb925: 1.0,
+    hb916: 0.91,
+    baseCoef: 1.06,
+    exemptUp: 30,
+    hb926: 1.23,
+    days926Adult: 30,
+    days926Child: 180,
+    hb913: 1.23,
+    growth913: 1.05,
+    hbMin913: 1.03,
+    hb914: 0.99,
+    hb921: 0.99,
+    transportHb: 1.32,
+  },
+  dental: { capEducated: 24, capOther: 22, addUnder6: 3, add6to12: 2, add12to18: 1 },
+  misc: {
+    zzsHb: 1.34,
+    zzsTransportHb: 1.53,
+    zzs06714Hb: 1.37,
+    zzsEpisode: 1_550,
+    zdsNonstopHb: 1.53,
+    zdsNonstop40Hb: 1.65,
+    zdsHb: 1.26,
+    zds40Hb: 1.36,
+    zds69Hb: 1.34,
+    dentalEmergencyDay: 9_600,
+    pharmacyEmergencyDay: 3_600,
+    spaGrowth: 1.02,
+    spa09543Hb: 0.78,
+    ozdravovnaDay: 1_336,
+    hb09543: 1.16,
+    hb09555: 1.12,
+    hb09580: 1.04,
+    fee09990: 36,
+    fee09552: 33,
+    eRecipe: 17,
+    lateCoef: 0.95,
+  },
+  advances: { specialists: 1.06, rdg: 1.04, labs: 1.03, odb913: 1.05, physio: 1.07 },
   gp: {
     rate: { a: 78, b: 69, c001: 60, c002: 66 },
     bonusEducation: 1,

@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Callout, Card, FieldGrid, NumberField, SelectField, ToggleField } from '../components/fields'
+import { Card, FieldGrid, NumberField, SelectField, ToggleField } from '../components/fields'
 import { PuroFields } from '../components/segmentFields'
 import { StepsTable } from '../components/StepsTable'
 import { PageHeader, Summary } from '../components/Summary'
@@ -20,7 +20,7 @@ export function HomecarePage() {
   return (
     <>
       <PageHeader
-        title="Domácí, paliativní a zvláštní ambulantní péče (925/916, 926, 913)"
+        title="Domácí, paliativní a zvláštní ambulantní péče (914, 916, 921, 925, 926, 913)"
         lead="Příloha č. 6. Domácí péče: HB 1,00 (925) / 0,91 (916) + bonifikace, maximum (1,06 + KN)·[POPzpoZ·PURO_O + max(PURO_O·POPzpoMh; UHRMh − UHRMr)]. Mobilní paliativní péče 926: HB 1,23 Kč, dny péče omezené 30 dny na dospělého a 180 na dítě. Odbornost 913: HB 1,23 Kč, maximum max{PMUP_ref · pacient-měsíce · 1,05 · KN; PB · 1,03 + KP}."
       />
       <Summary
@@ -44,7 +44,14 @@ export function HomecarePage() {
         </FieldGrid>
       </Card>
       <PuroFields value={homecare.puro} onChange={(v) => setHc({ puro: v })} kpLabel="ZUM + ZULP" />
-      <Callout kind="info">Odbornosti 914 a 921 se hradí výkonově bez maxima (HB 0,99 Kč). Maximum se nepoužije při ≤ 30 unikátních pojištěncích.</Callout>
+      <Card title="Odbornosti 914 a 921, přeprava v návštěvní službě" subtitle="Hradí se výkonově bez maxima; maximum 925/916 se nepoužije při ≤ 30 unikátních pojištěncích.">
+        <FieldGrid columns={4}>
+          <NumberField label="Body odbornosti 914 (HB 0,99)" value={homecare.other.points914} onChange={(v) => setHc({ other: { ...homecare.other, points914: v } })} step={10_000} />
+          <NumberField label="Body odbornosti 921 (HB 0,99)" value={homecare.other.points921} onChange={(v) => setHc({ other: { ...homecare.other, points921: v } })} step={10_000} />
+          <NumberField label="ZUM + ZULP 914/921" value={homecare.other.kp} onChange={(v) => setHc({ other: { ...homecare.other, kp: v } })} unit="Kč" />
+          <NumberField label="Body přepravy v návštěvní službě (HB 1,32)" value={homecare.other.transportPoints} onChange={(v) => setHc({ other: { ...homecare.other, transportPoints: v } })} step={10_000} />
+        </FieldGrid>
+      </Card>
       <StepsTable steps={hc.steps} title={`Průchod výpočtem – domácí péče ${homecare.odb}`} />
 
       <Card title="Mobilní specializovaná paliativní péče 926 – část B">

@@ -22,7 +22,7 @@ export function PhysioPage() {
   return (
     <>
       <PageHeader
-        title="Fyzioterapie (902)"
+        title="Fyzioterapie a ergoterapie (902, 917)"
         lead="Příloha č. 7. Hodnota bodu 0,73 Kč (+0,07 při > 5 % neurologických/traumatologických dg., +0,01 při nízkém podílu základních výkonů), maximum (1,02 + KN)·POPzpoZ·PURO_O + max[…] s minimální HB 0,60 Kč; pojištěnci s vybranými diagnózami se hradí bez limitu; bonus 400–800 Kč za zahájení do 14 dnů po hospitalizaci."
       />
       <Summary
